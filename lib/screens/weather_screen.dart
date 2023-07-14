@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:evaluation_app/screens/model.dart';
-import 'package:evaluation_app/screens/service.dart';
-import 'package:wear/wear.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:wear/wear.dart';
+import 'package:contador_wearable/screens/model.dart';
+import 'package:contador_wearable/screens/service.dart';
 
 class WeatherWidget extends StatefulWidget {
   final WeatherService weatherService;
@@ -17,9 +17,7 @@ class WeatherWidget extends StatefulWidget {
 
 class _WeatherWidgetState extends State<WeatherWidget> {
   late WeatherData _weatherData;
-  late String _hourString;
-  late String _minuteString;
-  late String _amPmString;
+  DateTime now = DateTime.now();
 
   @override
   void initState() {
@@ -30,35 +28,18 @@ class _WeatherWidgetState extends State<WeatherWidget> {
       description: '',
       iconUrl: '',
     );
-    _getTime();
-    _getWeather();
-  }
 
-  void _getTime() {
-    final now = DateTime.now();
-    final hourFormatter = DateFormat('hh');
-    final minuteFormatter = DateFormat('mm');
-    final amPmFormatter = DateFormat('a');
-    _hourString = hourFormatter.format(now);
-    _minuteString = minuteFormatter.format(now);
-    _amPmString = amPmFormatter.format(now);
-    Timer.periodic(Duration(minutes: 1), (timer) {
-      final now = DateTime.now();
-      final hourFormatter = DateFormat('hh');
-      final minuteFormatter = DateFormat('mm');
-      final amPmFormatter = DateFormat('a');
+    Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
-        _hourString = hourFormatter.format(now);
-        _minuteString = minuteFormatter.format(now);
-        _amPmString = amPmFormatter.format(now);
+        now = DateTime.now();
       });
+      _getWeather();
     });
   }
 
   Future<void> _getWeather() async {
     try {
-      final weatherData =
-          await widget.weatherService.getWeather('San Juan del Rio');
+      final weatherData = await widget.weatherService.getWeather('Queretaro');
       setState(() {
         _weatherData = weatherData;
       });
@@ -70,112 +51,85 @@ class _WeatherWidgetState extends State<WeatherWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: widget.mode == WearMode.active
-          ? Color.fromARGB(225, 89, 89, 222)
-          : Colors.black,
-      body: Center(
+      body: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              widget.mode == WearMode.active
+                  ? const Color.fromARGB(255, 0, 0, 127) // Azul oscuro
+                  : const Color.fromARGB(255, 127, 127, 127), // Gris oscuro
+              widget.mode == WearMode.active
+                  ? const Color.fromARGB(255, 127, 127, 127) // Gris oscuro
+                  : Color.fromARGB(255, 80, 123, 161), // Azul medio
+            ],
+          ),
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              DateFormat('EEEE, d MMMM yyyy').format(DateTime.now()),
-              style: TextStyle(
+              DateFormat('EEEE').format(DateTime.now()), // Solo día de la semana
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: _hourString,
-                        style: TextStyle(
-                          color: widget.mode == WearMode.active
-                              ? Colors.white
-                              : Color.fromARGB(207, 109, 124, 237),
-                          fontSize: 60,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ':',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 60,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 2),
-                Column(
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: _minuteString,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      _amPmString,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                )
-              ],
+            Text(
+              DateFormat('d MMMM').format(DateTime.now()), // Día y mes
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 5),
+            Text(
+              DateFormat('yyyy').format(DateTime.now()), // Año
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              '${now.hour}:${now.minute}:${now.second}',
+              style: const TextStyle(fontSize: 18, color: Colors.white),
+            ),
+            const SizedBox(height: 5),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '${_weatherData.cityName}',
-                  style: TextStyle(
+                  _weatherData.description,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Text(
-                  '${_weatherData.temperature}°C',
-                  style: TextStyle(
+                  _weatherData.cityName,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${_weatherData.temperature}°C',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Angel E. L.',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            )
           ],
         ),
       ),
